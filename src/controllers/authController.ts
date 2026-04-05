@@ -22,7 +22,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     if (!username || !password) {
       res.status(400).json({
         success: false,
-        error: 'Username and password are required'
+        error: 'ກະລຸນາປ້ອນຊື່ຜູ້ໃຊ້ ແລະ ລະຫັດຜ່ານ'
       });
       return;
     }
@@ -54,7 +54,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     if (result.rows.length === 0) {
       res.status(401).json({
         success: false,
-        error: 'Invalid username or password'
+        error: 'ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ'
       });
       return;
     }
@@ -65,7 +65,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     if (!user.is_active) {
       res.status(403).json({
         success: false,
-        error: 'Account is disabled. Please contact administrator'
+        error: 'ບັນຊີຖືກປິດການໃຊ້ງານ. ກະລຸນາຕິດຕໍ່ຜູ້ດູແລລະບົບ'
       });
       return;
     }
@@ -80,12 +80,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       await pool.query(
         `INSERT INTO audit_logs (log_category, table_name, record_id, action, description, metadata)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        ['AUTH', 'users', user.id, 'LOGIN_FAILED', 'Invalid password attempt', JSON.stringify({ username })]
+        ['AUTH', 'users', user.id, 'LOGIN_FAILED', 'ປ້ອນລະຫັດຜ່ານຜິດ', JSON.stringify({ username })]
       );
 
       res.status(401).json({
         success: false,
-        error: 'Invalid username or password'
+        error: 'ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ'
       });
       return;
     }
@@ -149,11 +149,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     });
 
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('ຂໍ້ຜິດພາດການເຂົ້າສູ່ລະບົບ:', error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? (error as Error).message : 'Something went wrong'
+      error: 'ເກີດຂໍ້ຜິດພາດທີ່ເຄື່ອງແມ່ຂ່າຍ',
+      message: process.env.NODE_ENV === 'development' ? (error as Error).message : 'ມີບາງຢ່າງຜິດພາດ'
     });
   }
 };
@@ -165,7 +165,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
     if (!userId) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized'
+        error: 'ບໍ່ມີສິດເຂົ້າເຖິງ'
       });
       return;
     }
@@ -179,7 +179,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
     if (userResult.rows.length === 0) {
       res.status(404).json({
         success: false,
-        error: 'User not found'
+        error: 'ບໍ່ພົບຜູ້ໃຊ້'
       });
       return;
     }
@@ -222,10 +222,10 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
     });
 
   } catch (error) {
-    console.error('Get profile error:', error);
+    console.error('ຂໍ້ຜິດພາດການດຶງຂໍ້ມູນໂປຣໄຟລ໌:', error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error'
+      error: 'ເກີດຂໍ້ຜິດພາດທີ່ເຄື່ອງແມ່ຂ່າຍ'
     });
   }
 };
@@ -238,7 +238,7 @@ export const changePassword = async (req: Request, res: Response): Promise<void>
     if (!currentPassword || !newPassword) {
       res.status(400).json({
         success: false,
-        error: 'Current password and new password are required'
+        error: 'ກະລຸນາປ້ອນລະຫັດຜ່ານປັດຈຸບັນ ແລະ ລະຫັດຜ່ານໃໝ່'
       });
       return;
     }
@@ -252,7 +252,7 @@ export const changePassword = async (req: Request, res: Response): Promise<void>
     if (result.rows.length === 0) {
       res.status(404).json({
         success: false,
-        error: 'User not found'
+        error: 'ບໍ່ພົບຜູ້ໃຊ້'
       });
       return;
     }
@@ -263,7 +263,7 @@ export const changePassword = async (req: Request, res: Response): Promise<void>
     if (!isValidPassword) {
       res.status(401).json({
         success: false,
-        error: 'Current password is incorrect'
+        error: 'ລະຫັດຜ່ານປັດຈຸບັນບໍ່ຖືກຕ້ອງ'
       });
       return;
     }
@@ -292,10 +292,10 @@ export const changePassword = async (req: Request, res: Response): Promise<void>
     });
 
   } catch (error) {
-    console.error('Change password error:', error);
+    console.error('ຂໍ້ຜິດພາດການປ່ຽນລະຫັດຜ່ານ:', error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error'
+      error: 'ເກີດຂໍ້ຜິດພາດທີ່ເຄື່ອງແມ່ຂ່າຍ'
     });
   }
 };

@@ -24,7 +24,7 @@ router.get('/:id', (req: Request, res: Response) => {
   if (!student) {
     return res.status(404).json({
       success: false,
-      error: 'Student not found'
+      error: 'ບໍ່ພົບຂໍ້ມູນນັກສຶກສາ'
     });
   }
 
@@ -41,7 +41,7 @@ router.post('/', (req: Request, res: Response) => {
   if (!name || !email) {
     return res.status(400).json({
       success: false,
-      error: 'Name and email are required'
+      error: 'ກະລຸນາປ້ອນຊື່ ແລະ ອີເມວ'
     });
   }
 
@@ -67,7 +67,7 @@ router.put('/:id', (req: Request, res: Response) => {
   if (studentIndex === -1) {
     return res.status(404).json({
       success: false,
-      error: 'Student not found'
+      error: 'ບໍ່ພົບຂໍ້ມູນນັກສຶກສາ'
     });
   }
 
@@ -92,7 +92,7 @@ router.delete('/:id', (req: Request, res: Response) => {
   if (studentIndex === -1) {
     return res.status(404).json({
       success: false,
-      error: 'Student not found'
+      error: 'ບໍ່ພົບຂໍ້ມູນນັກສຶກສາ'
     });
   }
 

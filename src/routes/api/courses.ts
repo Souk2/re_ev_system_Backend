@@ -24,7 +24,7 @@ router.get('/:id', (req: Request, res: Response) => {
   if (!course) {
     return res.status(404).json({
       success: false,
-      error: 'Course not found'
+      error: 'ບໍ່ພົບຂໍ້ມູນວິຊາຮຽນ'
     });
   }
 
@@ -41,7 +41,7 @@ router.post('/', (req: Request, res: Response) => {
   if (!code || !name || !credits) {
     return res.status(400).json({
       success: false,
-      error: 'Code, name, and credits are required'
+      error: 'ກະລຸນາປ້ອນລະຫັດວິຊາ, ຊື່ ແລະ ຈຳນວນໜ່ວຍກິດ'
     });
   }
 
@@ -68,7 +68,7 @@ router.put('/:id', (req: Request, res: Response) => {
   if (courseIndex === -1) {
     return res.status(404).json({
       success: false,
-      error: 'Course not found'
+      error: 'ບໍ່ພົບຂໍ້ມູນວິຊາຮຽນ'
     });
   }
 

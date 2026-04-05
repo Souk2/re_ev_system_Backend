@@ -36,16 +36,16 @@ app.get('/', (req: Request, res: Response) => {
 
 app.use((req: Request, res: Response) => {
   res.status(404).json({
-    error: 'Not Found',
-    message: `Route ${req.method} ${req.path} not found`
+    error: 'ບໍ່ພົບໜ້າທີ່ຕ້ອງການ',
+    message: `ບໍ່ພົບເສັ້ນທາງ ${req.method} ${req.path}`
   });
 });
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('Error:', err);
+  console.error('ຂໍ້ຜິດພາດ:', err);
   res.status(500).json({
-    error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+    error: 'ເກີດຂໍ້ຜິດພາດທີ່ເຄື່ອງແມ່ຂ່າຍ',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'ມີບາງຢ່າງຜິດພາດ'
   });
 });
 
