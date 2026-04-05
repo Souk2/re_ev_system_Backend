@@ -21,7 +21,7 @@ pool.on('connect', () => {
 
 pool.on('error', (err) => {
   console.error('❌ Unexpected error on idle client', err);
-  process.exit(-1);
+  // ຢ່າ exit, ໃຫ້ pool reconnect ອັດຕະໂນມັດ
 });
 
 // Helper function to test database connection
