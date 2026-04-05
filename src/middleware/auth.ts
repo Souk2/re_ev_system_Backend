@@ -17,7 +17,7 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       res.status(401).json({
         success: false,
-        error: 'Access denied. No token provided'
+        error: 'ການເຂົ້າເຖິງຖືກປະຕິເສດ. ບໍ່ມີໂທເຄນ'
       });
       return;
     }
@@ -39,17 +39,17 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     if (error instanceof jwt.TokenExpiredError) {
       res.status(401).json({
         success: false,
-        error: 'Token expired'
+        error: 'ໂທເຄນໝົດອາຍຸແລ້ວ'
       });
     } else if (error instanceof jwt.JsonWebTokenError) {
       res.status(401).json({
         success: false,
-        error: 'Invalid token'
+        error: 'ໂທເຄນບໍ່ຖືກຕ້ອງ'
       });
     } else {
       res.status(500).json({
         success: false,
-        error: 'Internal server error'
+        error: 'ເກີດຂໍ້ຜິດພາດທີ່ເຄື່ອງແມ່ຂ່າຍ'
       });
     }
   }
@@ -60,7 +60,7 @@ export const authorize = (...roles: string[]) => {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized'
+        error: 'ບໍ່ມີສິດເຂົ້າເຖິງ'
       });
       return;
     }
@@ -68,7 +68,7 @@ export const authorize = (...roles: string[]) => {
     if (!roles.includes(req.user.role)) {
       res.status(403).json({
         success: false,
-        error: `Access denied. Role '${req.user.role}' is not authorized to access this resource`
+        error: `ການເຂົ້າເຖິງຖືກປະຕິເສດ. ບົດບາດ '${req.user.role}' ບໍ່ມີສິດເຂົ້າເຖິງຊັບພະຍາກອນນີ້`
       });
       return;
     }

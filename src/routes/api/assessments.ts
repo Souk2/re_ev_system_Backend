@@ -24,7 +24,7 @@ router.get('/:id', (req: Request, res: Response) => {
   if (!assessment) {
     return res.status(404).json({
       success: false,
-      error: 'Assessment not found'
+      error: 'ບໍ່ພົບຂໍ້ມູນການປະເມີນຜົນ'
     });
   }
 
@@ -67,7 +67,7 @@ router.post('/', (req: Request, res: Response) => {
   if (!studentId || !courseId || !type || score === undefined) {
     return res.status(400).json({
       success: false,
-      error: 'studentId, courseId, type, and score are required'
+      error: 'ກະລຸນາປ້ອນລະຫັດນັກສຶກສາ, ລະຫັດວິຊາ, ປະເພດ ແລະ ຄະແນນ'
     });
   }
 
@@ -96,7 +96,7 @@ router.put('/:id', (req: Request, res: Response) => {
   if (assessmentIndex === -1) {
     return res.status(404).json({
       success: false,
-      error: 'Assessment not found'
+      error: 'ບໍ່ພົບຂໍ້ມູນການປະເມີນຜົນ'
     });
   }
 
