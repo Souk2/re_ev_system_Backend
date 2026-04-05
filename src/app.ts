@@ -7,7 +7,6 @@ import { config } from 'dotenv';
 config();
 
 import healthRouter from './routes/health';
-import apiRouter from './routes/api';
 import authRouter from './routes/auth';
 
 const app: Application = express();
@@ -22,7 +21,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/health', healthRouter);
-app.use('/api', apiRouter);
 app.use('/api/auth', authRouter);
 
 app.get('/', (req: Request, res: Response) => {
