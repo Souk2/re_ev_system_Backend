@@ -1,6 +1,7 @@
 import { pool } from '../config/database';
 import { tableConfigs } from '../config/tables';
 import { Request, Response } from 'express';
+import bcrypt from 'bcrypt';
 
 export class BaseService {
   
@@ -69,18 +70,37 @@ export class BaseService {
 
     const bodyKeys = Object.keys(req.body);
     const allowedKeys = bodyKeys.filter(key => config.columns.includes(key));
-    
+
     if (allowedKeys.length === 0) return res.status(400).json({ error: 'No valid fields provided' });
+
+    // Handle Password Hashing for Users
+    if (tableName === 'users' && req.body.password) {
+      req.body.password_hash = await bcrypt.hash(req.body.password, 10);
+      // Remove plain 'password' from allowed keys so it's not inserted as plain text
+      // and ensure 'password_hash' is added if not already there (though it's in config now)
+      const idx = allowedKeys.indexOf('password');
+      if (idx > -1) allowedKeys.splice(idx, 1);
+      
+      if (!allowedKeys.includes('password_hash')) allowedKeys.push('password_hash');
+      
+      // Set role default if missing
+      if (!req.body.role) req.body.role = 'staff';
+    }
 
     const columns = allowedKeys.join(', ');
     const placeholders = allowedKeys.map((_, i) => `$${i + 1}`).join(', ');
-    const values = allowedKeys.map(key => req.body[key]);
+    
+    // Map values, prioritizing password_hash over password if it exists
+    const values = allowedKeys.map(key => {
+        if (key === 'password_hash') return req.body.password_hash;
+        return req.body[key];
+    });
 
     try {
       const query = `INSERT INTO ${tableName} (${columns}) VALUES (${placeholders}) RETURNING *`;
       const result = await pool.query(query, values);
 
-      console.log(`✅ Created ${tableName}:`, result.rows[0].name || result.rows[0].code);
+      console.log(`✅ Created ${tableName}:`, result.rows[0].name || result.rows[0].code || result.rows[0].username);
       res.status(201).json({ success: true, data: result.rows[0] });
     } catch (error) {
       console.error(`❌ Error creating ${tableName}:`, error);
