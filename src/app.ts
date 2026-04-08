@@ -8,6 +8,7 @@ config();
 
 import healthRouter from './routes/health';
 import authRouter from './routes/auth';
+import apiRouter from './routes/api';
 
 const app: Application = express();
 
@@ -22,6 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/health', healthRouter);
 app.use('/api/auth', authRouter);
+app.use('/api', apiRouter);
 
 app.get('/', (req: Request, res: Response) => {
   res.json({
