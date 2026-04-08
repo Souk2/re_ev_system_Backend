@@ -26,4 +26,10 @@ export const tableConfigs: TableConfig = {
   
   // ວິຊາຮຽນ
   courses: { columns: ['code', 'name', 'credits', 'department_id'] },
+
+  // ຜູ້ໃຊ້ ແລະ ພະນັກງານ (Users & Personnel)
+  // ✅ FIXED: Removed 'password' (causes crash) and 'password_hash' (for security).
+  users: { columns: ['username', 'role', 'is_active'] },
+  staff: { columns: ['user_id', 'first_name', 'last_name', 'phone', 'email', 'department_id', 'position', 'is_active'] },
+  teachers: { columns: ['user_id', 'first_name', 'last_name', 'phone', 'email', 'specialization', 'is_active'] },
 };
