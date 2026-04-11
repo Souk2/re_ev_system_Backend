@@ -8,8 +8,8 @@ export const validateLogin = [
     .trim()
     .isLength({ min: 1, max: 50 })
     .withMessage('ກະລຸນາປ້ອນຊື່ຜູ້ໃຊ້')
-    .matches(/^[a-zA-Z0-9_]+$/)
-    .withMessage('ຊື່ຜູ້ໃຊ້ສາມາດໃຊ້ໄດ້ສະເພາະ a-z, 0-9, _'),
+    .matches(/^[a-zA-Z0-9_-]+$/)
+    .withMessage('ຊື່ຜູ້ໃຊ້ບໍ່ຖືກຕ້ອງ'),
   body('password')
     .isString()
     .notEmpty()

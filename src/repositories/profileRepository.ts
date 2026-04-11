@@ -3,9 +3,8 @@ import { BaseRepository } from './baseRepository';
 export class ProfileRepository extends BaseRepository {
   async getStaffProfile(userId: string) {
     const result = await this.query(
-      `SELECT s.*, d.name as department_name
+      `SELECT *
        FROM staff s
-       LEFT JOIN departments d ON s.department_id = d.id
        WHERE s.user_id = $1`,
       [userId]
     );

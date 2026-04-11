@@ -25,3 +25,8 @@ Thumbs.db
 logs/
 *.log
 npm-debug.log*
+
+# Images
+uploads/applications/
+uploads/staff/
+uploads/teachers/

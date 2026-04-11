@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { userRepository } from '../repositories/userRepository';
 import { auditRepository } from '../repositories/auditRepository';
 import { profileRepository } from '../repositories/profileRepository';
+import { JWT_SECRET, JWT_EXPIRES_IN } from '../config/jwt';
 
 export interface LoginResult {
   token: string;
@@ -16,36 +17,41 @@ export interface LoginResult {
 
 export class AuthService {
   async login(username: string, password: string): Promise<LoginResult> {
-    // 1. ຄົ້ນຫາ user ພ້ອມ profile
+    console.log(`🔐 Login attempt for: "${username}"`);
+    
     const user = await userRepository.findWithProfile(username);
     if (!user) {
+      console.log(`❌ User not found: "${username}"`);
       throw new Error('ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ');
     }
 
-    // 2. ກວດສອບບັນຊີ
+    console.log(`✅ User found: role=${user.role}, is_active=${user.is_active}`);
+
     if (!user.is_active) {
+      console.log(`❌ User inactive: "${username}"`);
       throw new Error('ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ');
     }
 
-    // 3. ກວດສອບລະຫັດຜ່ານ
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    console.log(`🔑 Password valid: ${isValidPassword}`);
+    
     if (!isValidPassword) {
       await auditRepository.logFailedLogin(user.id, username);
+      console.log(`❌ Invalid password for: "${username}"`);
       throw new Error('ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ');
     }
 
-    // 4. ສ້າງ JWT token
     const token = this.generateToken({
       userId: user.id,
       username: user.username,
       role: user.role,
     });
 
-    // 5. Log ການເຂົ້າສູ່ລະບົບ
     await auditRepository.logLogin(user.id, username);
 
-    // 6. ດຶງຂໍ້ມູນ profile
     const profile = await profileRepository.getProfileByRole(user.role, user.profile_id);
+
+    console.log(`✅ Login successful: ${username} (${user.role})`);
 
     return {
       token,
@@ -60,9 +66,6 @@ export class AuthService {
 
   async getProfile(userId: string) {
     const user = await userRepository.findById(userId);
-    if (!user) {
-      throw new Error('ບໍ່ພົບຜູ້ໃຊ້');
-    }
     if (!user) {
       throw new Error('ບໍ່ພົບຜູ້ໃຊ້');
     }
@@ -98,14 +101,11 @@ export class AuthService {
   }
 
   private generateToken(payload: { userId: string; username: string; role: string }): string {
-    const secret = process.env.JWT_SECRET || 're_ev_system_secret_key_2024_change_in_production';
-    const expiresIn = (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'];
-
-    return jwt.sign(payload, secret, {
-    expiresIn,
-    issuer: 're-ev-system',
-    subject: payload.userId,
-  });
+    return jwt.sign(payload, JWT_SECRET, {
+      expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'],
+      issuer: 're-ev-system',
+      subject: payload.userId,
+    });
   }
 }
 
