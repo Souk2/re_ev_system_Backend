@@ -207,16 +207,144 @@ export class BaseService {
     const config = tableConfigs[tableName];
     if (!config) return res.status(404).json({ error: 'Table not found' });
 
+    const client = await pool.connect();
+
     try {
+      await client.query('BEGIN');
+
+      // Special handling for users table - cascade delete related records
+      if (tableName === 'users') {
+        // Check if user exists
+        const userCheck = await client.query('SELECT id, role FROM users WHERE id = $1', [id]);
+        if (userCheck.rows.length === 0) {
+          await client.query('ROLLBACK');
+          return res.status(404).json({ error: 'User not found' });
+        }
+
+        const userRole = userCheck.rows[0].role;
+
+        // Delete related records based on role
+        if (userRole === 'student') {
+          // Delete student emergency contacts
+          await client.query(
+            'DELETE FROM student_emergency_contacts WHERE student_id IN (SELECT id FROM students WHERE user_id = $1)',
+            [id]
+          );
+          // Delete student education records
+          await client.query(
+            'DELETE FROM student_education_records WHERE student_id IN (SELECT id FROM students WHERE user_id = $1)',
+            [id]
+          );
+          // Delete student work affiliations
+          await client.query(
+            'DELETE FROM student_work_affiliations WHERE student_id IN (SELECT id FROM students WHERE user_id = $1)',
+            [id]
+          );
+          // Delete student profile
+          await client.query(
+            'DELETE FROM student_profiles WHERE student_id IN (SELECT id FROM students WHERE user_id = $1)',
+            [id]
+          );
+          // Delete enrollments
+          await client.query(
+            'DELETE FROM enrollments WHERE student_id IN (SELECT id FROM students WHERE user_id = $1)',
+            [id]
+          );
+          // Delete invoices
+          await client.query(
+            'DELETE FROM invoices WHERE student_id IN (SELECT id FROM students WHERE user_id = $1)',
+            [id]
+          );
+          // Delete student semester results
+          await client.query(
+            'DELETE FROM student_semester_results WHERE student_id IN (SELECT id FROM students WHERE user_id = $1)',
+            [id]
+          );
+          // Delete student
+          await client.query('DELETE FROM students WHERE user_id = $1', [id]);
+        } else if (userRole === 'teacher') {
+          // Update classes to remove teacher reference instead of deleting
+          await client.query(
+            'UPDATE classes SET teacher_id = NULL WHERE teacher_id = $1',
+            [id]
+          );
+          // Delete teacher qualifications
+          await client.query(
+            'DELETE FROM teacher_qualifications WHERE teacher_id IN (SELECT id FROM teachers WHERE user_id = $1)',
+            [id]
+          );
+          // Delete teacher availability
+          await client.query(
+            'DELETE FROM teacher_availability WHERE teacher_id IN (SELECT id FROM teachers WHERE user_id = $1)',
+            [id]
+          );
+          // Delete teacher
+          await client.query('DELETE FROM teachers WHERE user_id = $1', [id]);
+        } else if (userRole === 'staff') {
+          // Update reviewed_by in student_applications
+          await client.query(
+            'UPDATE student_applications SET reviewed_by = NULL WHERE reviewed_by IN (SELECT id FROM staff WHERE user_id = $1)',
+            [id]
+          );
+          // Update verified_by in payments
+          await client.query(
+            'UPDATE payments SET verified_by = NULL WHERE verified_by IN (SELECT id FROM staff WHERE user_id = $1)',
+            [id]
+          );
+          // Delete staff
+          await client.query('DELETE FROM staff WHERE user_id = $1', [id]);
+        }
+
+        // Delete audit logs for this user
+        await client.query('DELETE FROM audit_logs WHERE performed_by = $1', [id]);
+
+        // Finally delete the user
+        const result = await client.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
+        
+        await client.query('COMMIT');
+        
+        console.log(`🗑️ Deleted user and related records (ID: ${id}, Role: ${userRole})`);
+        return res.json({ 
+          success: true, 
+          message: 'Deleted successfully',
+          data: { user_id: id, role: userRole }
+        });
+      }
+
+      // Regular delete for other tables
       const query = `DELETE FROM ${tableName} WHERE id = $1 RETURNING id`;
-      const result = await pool.query(query, [id]);
+      const result = await client.query(query, [id]);
 
-      if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+      if (result.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Not found' });
+      }
 
+      await client.query('COMMIT');
       console.log(`🗑️ Deleted ${tableName} (ID: ${id})`);
       res.json({ success: true, message: 'Deleted successfully' });
-    } catch (error) {
-      res.status(500).json({ error: 'Internal server error' });
+    } catch (error: any) {
+      await client.query('ROLLBACK');
+      console.error(`❌ Error deleting ${tableName}:`, error.message);
+      console.error(`❌ Full error:`, error);
+      
+      // Handle foreign key constraint errors
+      if (error.code === '23503') {
+        return res.status(400).json({ 
+          error: 'Cannot delete: This record is referenced by other tables',
+          details: 'ລົບບໍ່ໄດ້ ເພາະມີຂໍ້ມູນທີ່ເຊື່ອມໂຍງຢູ່',
+          hint: error.hint || 'Please delete related records first'
+        });
+      }
+      
+      // Handle other database errors
+      res.status(500).json({ 
+        error: 'Internal server error', 
+        details: error.message,
+        hint: error.hint || null
+      });
+    } finally {
+      client.release();
     }
   }
 }
