@@ -47,7 +47,7 @@ export const tableConfigs: TableConfig = {
       'reg_village', 'residence_type_id', 'res_province_id', 'res_district_id',
       'res_village', 'phone', 'email', 'photo_3x4_path', 'id_card_path',
       'emergency_contacts', 'education_records', 'work_affiliations',
-      'applied_department_id', 'status', 'reviewed_by', 'review_notes',
+      'applied_department_id', 'session_id', 'status', 'reviewed_by', 'review_notes',
       'created_at', 'updated_at'
     ]
   },

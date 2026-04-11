@@ -46,13 +46,13 @@ export const createApplicationRoutes = () => {
       const userId = userResult.rows[0].id
 
       const studentResult = await client.query(
-        `INSERT INTO students (user_id, student_code, department_id, entry_year_id, current_year_level, status, created_at, updated_at)
-         SELECT $1, $2, $3, ay.id, 1, 'active', NOW(), NOW()
+        `INSERT INTO students (user_id, student_code, department_id, session_id, entry_year_id, current_year_level, status, created_at, updated_at)
+         SELECT $1, $2, $3, $4, ay.id, 1, 'active', NOW(), NOW()
          FROM academic_years ay
          WHERE ay.is_current = true
          LIMIT 1
          RETURNING id`,
-        [userId, studentCode, app.applied_department_id || null]
+        [userId, studentCode, app.applied_department_id || null, app.session_id || null]
       )
 
       const studentId = studentResult.rows[0]?.id
@@ -185,6 +185,34 @@ export const createApplicationRoutes = () => {
       console.error('Rejection Error:', error)
       res.status(500).json({
         error: 'Failed to reject',
+        details: error.message
+      })
+    }
+  })
+
+  router.delete('/student_applications/:id', async (req: Request, res: Response) => {
+    const { id } = req.params
+
+    try {
+      const result = await pool.query(
+        'DELETE FROM student_applications WHERE id = $1 RETURNING *',
+        [id]
+      )
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Not found' })
+      }
+
+      res.json({
+        success: true,
+        message: 'Deleted successfully',
+        data: result.rows[0]
+      })
+
+    } catch (error: any) {
+      console.error('Delete Error:', error)
+      res.status(500).json({
+        error: 'Failed to delete application',
         details: error.message
       })
     }
