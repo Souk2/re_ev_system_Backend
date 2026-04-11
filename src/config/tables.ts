@@ -25,11 +25,30 @@ export const tableConfigs: TableConfig = {
   time_slots: { columns: ['session_id', 'code', 'name_lo', 'time_start', 'time_end'] },
   
   // ວິຊາຮຽນ
-  courses: { columns: ['code', 'name', 'credits', 'department_id'] },
+  courses: { columns: ['code', 'name', 'credits', 'department_id', 'year_level'] },
 
+  tuition_fees: { columns: ['department_id', 'academic_year_id', 'year_level', 'semester', 'fee_amount', 'effective_from', 'is_active'] },
   // ຜູ້ໃຊ້ ແລະ ພະນັກງານ (Users & Personnel)
   // ✅ FIXED: Removed 'password' (causes crash) and 'password_hash' (for security).
   users: { columns: ['username', 'role', 'is_active'] },
-  staff: { columns: ['user_id', 'first_name', 'last_name', 'phone', 'email', 'department_id', 'position', 'is_active'] },
-  teachers: { columns: ['user_id', 'first_name', 'last_name', 'phone', 'email', 'specialization', 'is_active'] },
+  staff: { columns: ['user_id', 'first_name', 'last_name', 'phone', 'email', 'position', 'photo_path', 'is_active'] },
+  teachers: { columns: ['user_id', 'first_name', 'last_name', 'phone', 'email', 'specialization', 'photo_path', 'is_active'] },
+
+  // 🎓 ນັກສຶກສາ (Students)
+  students: { columns: ['user_id', 'student_code', 'department_id', 'entry_year_id', 'current_year_level', 'status'] },
+  student_profiles: { columns: ['student_id', 'first_name_lo', 'last_name_lo', 'first_name_en', 'last_name_en', 'gender', 'dob', 'ethnicity_id', 'religion_id', 'birth_province_id', 'birth_district_id', 'birth_village', 'phone', 'reg_province_id', 'reg_district_id', 'reg_village', 'residence_type_id', 'res_province_id', 'res_district_id', 'res_village', 'photo_path'] },
+
+  // 🆕 ແບບຟອມສະໝັກເຂົ້າຮຽນ (Student Application Form)
+  student_applications: {
+    columns: [
+      'first_name_lo', 'last_name_lo', 'first_name_en', 'last_name_en',
+      'gender', 'dob', 'ethnicity_id', 'religion_id', 'birth_province_id',
+      'birth_district_id', 'birth_village', 'reg_province_id', 'reg_district_id',
+      'reg_village', 'residence_type_id', 'res_province_id', 'res_district_id',
+      'res_village', 'phone', 'email', 'photo_3x4_path', 'id_card_path',
+      'emergency_contacts', 'education_records', 'work_affiliations',
+      'applied_department_id', 'status', 'reviewed_by', 'review_notes',
+      'created_at', 'updated_at'
+    ]
+  },
 };

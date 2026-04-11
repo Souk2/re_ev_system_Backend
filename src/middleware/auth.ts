@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../config/jwt';
 
 interface AuthRequest extends Request {
   user?: {
@@ -25,8 +26,7 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     // Verify token
-    const jwtSecret = process.env.JWT_SECRET || 're_ev_system_secret_key_2024_change_in_production';
-    const decoded = jwt.verify(token, jwtSecret) as {
+    const decoded = jwt.verify(token, JWT_SECRET) as {
       userId: string;
       username: string;
       role: string;
