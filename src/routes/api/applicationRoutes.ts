@@ -2,17 +2,37 @@ import { Router, Request, Response } from 'express'
 import bcrypt from 'bcrypt'
 import { pool } from '../../config/database'
 import { sendApprovalEmail } from '../../services/EmailService'
+import { authenticate } from '../../middleware/auth'
 
 export const createApplicationRoutes = () => {
   const router = Router()
 
-  router.put('/student_applications/:id/approve', async (req: Request, res: Response) => {
+  router.put('/student_applications/:id/approve', authenticate, async (req: any, res: Response) => {
     const { id } = req.params
     const { review_notes } = req.body
+    const authUserId = req.user?.userId
+
+    if (!authUserId) {
+      return res.status(401).json({ error: 'Unauthorized: User not authenticated' })
+    }
+
     const client = await pool.connect()
 
     try {
       await client.query('BEGIN')
+
+      // Get staff_id from user_id
+      const staffResult = await client.query(
+        'SELECT id FROM staff WHERE user_id = $1',
+        [authUserId]
+      )
+
+      if (staffResult.rows.length === 0) {
+        await client.query('ROLLBACK')
+        return res.status(403).json({ error: 'Forbidden: Staff record not found' })
+      }
+
+      const staffId = staffResult.rows[0].id
 
       const appResult = await client.query(
         'SELECT * FROM student_applications WHERE id = $1',
@@ -27,8 +47,8 @@ export const createApplicationRoutes = () => {
       const app = appResult.rows[0]
 
       await client.query(
-        'UPDATE student_applications SET status = $1, review_notes = $2, updated_at = NOW() WHERE id = $3',
-        ['approved', review_notes || '', id]
+        'UPDATE student_applications SET status = $1, review_notes = $2, reviewed_by = $3, updated_at = NOW() WHERE id = $4',
+        ['approved', review_notes || '', staffId, id]
       )
 
       const studentCodeResult = await client.query('SELECT fn_generate_student_code() as student_code')
@@ -78,9 +98,23 @@ export const createApplicationRoutes = () => {
       if (app.emergency_contacts && app.emergency_contacts.length > 0) {
         for (const contact of app.emergency_contacts) {
           await client.query(
-            `INSERT INTO student_emergency_contacts (student_id, full_name, phone_mobile, created_at, updated_at)
-             VALUES ($1, $2, $3, NOW(), NOW())`,
-            [studentId, contact.full_name, contact.phone_mobile]
+            `INSERT INTO student_emergency_contacts (
+              student_id, full_name, relationship_id, province_id, district_id,
+              village, phone_home, phone_office, phone_mobile, is_primary,
+              created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())`,
+            [
+              studentId,
+              contact.full_name,
+              contact.relationship_id || null,
+              contact.province_id || null,
+              contact.district_id || null,
+              contact.village || null,
+              contact.phone_home || null,
+              contact.phone_office || null,
+              contact.phone_mobile,
+              contact.is_primary !== undefined ? contact.is_primary : false
+            ]
           )
         }
       }
@@ -89,16 +123,20 @@ export const createApplicationRoutes = () => {
         for (const edu of app.education_records) {
           await client.query(
             `INSERT INTO student_education_records (
-              student_id, record_type, school_name, graduation_year, institution_name,
-              department_name, current_year_level, created_at, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
+              student_id, record_type, school_name, graduation_year,
+              school_province_id, school_district_id,
+              institution_name, department_name, current_year_level,
+              created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
             [
-              studentId, 
-              edu.record_type, 
-              edu.school_name, 
+              studentId,
+              edu.record_type,
+              edu.school_name || null,
               edu.graduation_year ? parseInt(edu.graduation_year) || null : null,
-              edu.institution_name, 
-              edu.department_name, 
+              edu.school_province_id || null,
+              edu.school_district_id || null,
+              edu.institution_name || null,
+              edu.department_name || null,
               edu.current_year_level ? parseInt(edu.current_year_level) || null : null
             ]
           )
@@ -109,9 +147,19 @@ export const createApplicationRoutes = () => {
         for (const work of app.work_affiliations) {
           await client.query(
             `INSERT INTO student_work_affiliations (
-              student_id, occupation, position, workplace_name, is_active, created_at, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())`,
-            [studentId, work.occupation, work.position, work.workplace_name, work.is_active !== false]
+              student_id, occupation, position, workplace_name,
+              department, province_or_ministry, is_active,
+              created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
+            [
+              studentId,
+              work.occupation || null,
+              work.position || null,
+              work.workplace_name || null,
+              work.department || null,
+              work.province_or_ministry || null,
+              work.is_active !== undefined ? work.is_active : true
+            ]
           )
         }
       }
@@ -161,14 +209,31 @@ export const createApplicationRoutes = () => {
     }
   })
 
-  router.put('/student_applications/:id/reject', async (req: Request, res: Response) => {
+  router.put('/student_applications/:id/reject', authenticate, async (req: any, res: Response) => {
     const { id } = req.params
     const { review_notes } = req.body
+    const authUserId = req.user?.userId
+
+    if (!authUserId) {
+      return res.status(401).json({ error: 'Unauthorized: User not authenticated' })
+    }
+
+    // Get staff_id from user_id
+    const staffResult = await pool.query(
+      'SELECT id FROM staff WHERE user_id = $1',
+      [authUserId]
+    )
+
+    if (staffResult.rows.length === 0) {
+      return res.status(403).json({ error: 'Forbidden: Staff record not found' })
+    }
+
+    const staffId = staffResult.rows[0].id
 
     try {
       const result = await pool.query(
-        'UPDATE student_applications SET status = $1, review_notes = $2, updated_at = NOW() WHERE id = $3 RETURNING *',
-        ['rejected', review_notes || '', id]
+        'UPDATE student_applications SET status = $1, review_notes = $2, reviewed_by = $3, updated_at = NOW() WHERE id = $4 RETURNING *',
+        ['rejected', review_notes || '', staffId, id]
       )
 
       if (result.rows.length === 0) {

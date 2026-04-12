@@ -15,8 +15,10 @@ const app: Application = express();
 
 // ✅ Dynamic CORS from .env
 const allowedOrigins = process.env.FRONTEND_URLS
-  ? process.env.FRONTEND_URLS.split(',')
+  ? process.env.FRONTEND_URLS.split(',').map(url => url.trim())
   : ['http://localhost:1420'];
+
+console.log('✅ Allowed CORS Origins:', allowedOrigins);
 
 app.use(helmet());
 app.use(cors({
@@ -25,6 +27,8 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.warn(`⚠️ CORS blocked: ${origin}`);
+      console.warn('Allowed origins:', allowedOrigins);
       callback(new Error(`Not allowed by CORS: ${origin}`));
     }
   },
