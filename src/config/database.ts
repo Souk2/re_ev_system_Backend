@@ -1,7 +1,15 @@
-import { Pool } from 'pg';
+import { Pool, types } from 'pg';
 import { config } from 'dotenv';
 
 config();
+
+// Fix DATE type parsing: return as string instead of Date object
+// PostgreSQL DATE OID is 1082
+types.setTypeParser(1082, (val: string) => val);
+
+// Parse JSONB (OID 3802) and JSON (OID 114) automatically
+types.setTypeParser(3802, (val: string) => JSON.parse(val));
+types.setTypeParser(114, (val: string) => JSON.parse(val));
 
 export const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',

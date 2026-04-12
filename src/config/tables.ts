@@ -35,8 +35,11 @@ export const tableConfigs: TableConfig = {
   teachers: { columns: ['user_id', 'first_name', 'last_name', 'phone', 'email', 'specialization', 'photo_path', 'is_active'] },
 
   // 🎓 ນັກສຶກສາ (Students)
-  students: { columns: ['user_id', 'student_code', 'department_id', 'entry_year_id', 'current_year_level', 'status'] },
-  student_profiles: { columns: ['student_id', 'first_name_lo', 'last_name_lo', 'first_name_en', 'last_name_en', 'gender', 'dob', 'ethnicity_id', 'religion_id', 'birth_province_id', 'birth_district_id', 'birth_village', 'phone', 'reg_province_id', 'reg_district_id', 'reg_village', 'residence_type_id', 'res_province_id', 'res_district_id', 'res_village', 'photo_path'] },
+  students: { columns: ['user_id', 'student_code', 'department_id', 'session_id', 'entry_year_id', 'current_year_level', 'status'] },
+  student_profiles: { columns: ['student_id', 'first_name_lo', 'last_name_lo', 'first_name_en', 'last_name_en', 'gender', 'dob', 'ethnicity_id', 'religion_id', 'birth_province_id', 'birth_district_id', 'birth_village', 'phone', 'email', 'reg_province_id', 'reg_district_id', 'reg_village', 'residence_type_id', 'res_province_id', 'res_district_id', 'res_village', 'photo_path'] },
+  student_education_records: { columns: ['student_id', 'record_type', 'school_name', 'graduation_year', 'school_province_id', 'school_district_id', 'institution_name', 'department_name', 'current_year_level'] },
+  student_emergency_contacts: { columns: ['student_id', 'full_name', 'relationship_id', 'province_id', 'district_id', 'village', 'phone_home', 'phone_office', 'phone_mobile', 'is_primary'] },
+  student_work_affiliations: { columns: ['student_id', 'occupation', 'position', 'workplace_name', 'department', 'province_or_ministry', 'is_active'] },
 
   // 🆕 ແບບຟອມສະໝັກເຂົ້າຮຽນ (Student Application Form)
   student_applications: {

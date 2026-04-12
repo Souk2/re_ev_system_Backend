@@ -81,15 +81,15 @@ export const createApplicationRoutes = () => {
         `INSERT INTO student_profiles (
           student_id, first_name_lo, last_name_lo, first_name_en, last_name_en,
           gender, dob, ethnicity_id, religion_id, birth_province_id,
-          birth_district_id, birth_village, phone, reg_province_id, reg_district_id,
+          birth_district_id, birth_village, phone, email, reg_province_id, reg_district_id,
           reg_village, residence_type_id, res_province_id, res_district_id,
           res_village, photo_path, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, NOW(), NOW())`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NOW(), NOW())`,
         [
           studentId,
           app.first_name_lo, app.last_name_lo, app.first_name_en, app.last_name_en,
           app.gender, app.dob, app.ethnicity_id, app.religion_id, app.birth_province_id,
-          app.birth_district_id, app.birth_village, app.phone, app.reg_province_id, app.reg_district_id,
+          app.birth_district_id, app.birth_village, app.phone, app.email, app.reg_province_id, app.reg_district_id,
           app.reg_village, app.residence_type_id, app.res_province_id, app.res_district_id,
           app.res_village, app.photo_3x4_path
         ]

@@ -4,6 +4,7 @@ import { createUploadRoutes } from './uploadRoutes';
 import { createTeacherAssignmentRoutes } from './teacherAssignmentRoutes';
 import { createApplicationRoutes } from './applicationRoutes';
 import { createEnrollmentRoutes } from './enrollmentRoutes';
+import { createStudentRoutes } from './studentRoutes';
 import scheduleRoutes from './scheduleRoutes';
 
 const router = Router();
@@ -17,6 +18,7 @@ router.use('/schedule', scheduleRoutes);
 router.use(createApplicationRoutes());
 router.use(createTeacherAssignmentRoutes());
 router.use(createEnrollmentRoutes());
+router.use(createStudentRoutes());
 router.use(createDynamicRoutes());
 router.use(createUploadRoutes());
 
