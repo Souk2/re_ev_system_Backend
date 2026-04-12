@@ -10,8 +10,9 @@ export const createUploadRoutes = () => {
   const staffDir = path.join(uploadsDir, 'staff');
   const teacherDir = path.join(uploadsDir, 'teachers');
   const applicationDir = path.join(uploadsDir, 'applications');
+  const studentDir = path.join(uploadsDir, 'students');
 
-  [uploadsDir, staffDir, teacherDir, applicationDir].forEach(dir => {
+  [uploadsDir, staffDir, teacherDir, applicationDir, studentDir].forEach(dir => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
@@ -222,11 +223,11 @@ export const createUploadRoutes = () => {
       const timestamp = Date.now();
       const ext = photo_name ? path.extname(photo_name) : '.jpg';
       const filename = `student_${req.params.id}_${timestamp}${ext}`;
-      const filepath = path.join(applicationDir, filename);
+      const filepath = path.join(studentDir, filename);
 
       fs.writeFileSync(filepath, buffer);
 
-      const photoPath = `uploads/applications/${filename}`;
+      const photoPath = `uploads/students/${filename}`;
 
       res.json({
         success: true,

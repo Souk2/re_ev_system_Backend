@@ -17,7 +17,7 @@ export class BaseService {
 
     try {
       const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 50;
+      const limit = parseInt(req.query.limit as string) || 500;
       const offset = (page - 1) * limit;
 
       const cols = config.columns.join(', ');
