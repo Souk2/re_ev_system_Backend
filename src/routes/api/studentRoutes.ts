@@ -7,20 +7,72 @@ import fs from 'fs';
 export const createStudentRoutes = () => {
   const router = Router();
 
-  // Helper to save base64 photo
-  const saveBase64Photo = (base64Data: string, studentId: string): string => {
+  // Helper to save base64 photo (replaces old photo and uses student code)
+  const saveBase64Photo = async (base64Data: string, studentId: string, client?: any): Promise<string> => {
     const studentDir = path.join(process.cwd(), 'uploads', 'students');
     if (!fs.existsSync(studentDir)) {
       fs.mkdirSync(studentDir, { recursive: true });
     }
 
+    // Get student_code to use as filename
+    let studentCode = studentId; // fallback
+    try {
+      const queryClient = client || pool;
+      const result = await queryClient.query(
+        'SELECT student_code FROM students WHERE id = $1',
+        [studentId]
+      );
+      if (result.rows.length > 0) {
+        studentCode = result.rows[0].student_code;
+      }
+    } catch (err) {
+      console.warn('⚠️ Could not fetch student code, using student ID as fallback');
+    }
+
+    // Get existing photo path to delete it
+    let existingPhotoPath = null;
+    try {
+      const queryClient = client || pool;
+      const photoResult = await queryClient.query(
+        'SELECT photo_path FROM student_profiles WHERE student_id = $1',
+        [studentId]
+      );
+      existingPhotoPath = photoResult.rows[0]?.photo_path;
+    } catch (err) {
+      // Table might not exist yet, ignore
+    }
+
+    // Delete old photo file
+    if (existingPhotoPath) {
+      const oldFullPath = path.join(process.cwd(), existingPhotoPath);
+      if (fs.existsSync(oldFullPath)) {
+        try {
+          fs.unlinkSync(oldFullPath);
+          console.log(`✅ Deleted old photo during update: ${existingPhotoPath}`);
+        } catch (err) {
+          console.error(`⚠️ Failed to delete old photo: ${existingPhotoPath}`, err);
+        }
+      }
+    }
+
+    // Save new photo with student code name
     const pureBase64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(pureBase64, 'base64');
-    const timestamp = Date.now();
-    const filename = `student_${studentId}_${timestamp}.jpg`;
+    
+    // Determine file extension from base64 data
+    const mimeType = base64Data.match(/data:(image\/\w+);base64/);
+    const ext = mimeType ? 
+      (mimeType[1].includes('png') ? '.png' : mimeType[1].includes('gif') ? '.gif' : '.jpg') 
+      : '.jpg';
+    
+    const filename = `${studentCode}${ext}`;
     const filepath = path.join(studentDir, filename);
     fs.writeFileSync(filepath, buffer);
-    return `uploads/students/${filename}`;
+    
+    const photoPath = `uploads/students/${filename}`;
+    console.log(`✅ Saved new photo during update: ${photoPath}`);
+    
+    return photoPath;
   };
 
   // Get student with full profile data
@@ -267,8 +319,8 @@ export const createStudentRoutes = () => {
       // ✅ Handle photo during update
       let finalPhotoPath = profile.photo_path || null;
       if (finalPhotoPath && finalPhotoPath.startsWith('data:')) {
-        // If base64, save to disk
-        finalPhotoPath = saveBase64Photo(finalPhotoPath, studentId);
+        // If base64, save to disk (replaces old photo)
+        finalPhotoPath = await saveBase64Photo(finalPhotoPath, studentId, client);
       } else if (!finalPhotoPath) {
         // If empty, keep existing photo from DB
         const existingRes = await client.query('SELECT photo_path FROM student_profiles WHERE student_id = $1', [studentId]);

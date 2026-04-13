@@ -225,6 +225,14 @@ export class BaseService {
 
         // Delete related records based on role
         if (userRole === 'student') {
+          // Get photo path before deleting student
+          const photoResult = await client.query(
+            'SELECT sp.photo_path FROM student_profiles sp WHERE sp.student_id IN (SELECT id FROM students WHERE user_id = $1)',
+            [id]
+          );
+
+          const photoPath = photoResult.rows.length > 0 ? photoResult.rows[0].photo_path : null;
+
           // Delete student emergency contacts
           await client.query(
             'DELETE FROM student_emergency_contacts WHERE student_id IN (SELECT id FROM students WHERE user_id = $1)',
@@ -262,7 +270,31 @@ export class BaseService {
           );
           // Delete student
           await client.query('DELETE FROM students WHERE user_id = $1', [id]);
+
+          // Delete photo file after database records are deleted
+          if (photoPath) {
+            try {
+              const fs = await import('fs');
+              const path = await import('path');
+              const fullPath = path.join(process.cwd(), photoPath);
+              
+              if (fs.existsSync(fullPath)) {
+                fs.unlinkSync(fullPath);
+                console.log(`✅ Deleted student photo: ${photoPath}`);
+              }
+            } catch (err) {
+              console.error(`⚠️ Failed to delete photo file: ${photoPath}`, err);
+            }
+          }
         } else if (userRole === 'teacher') {
+          // Get photo path before deleting teacher
+          const photoResult = await client.query(
+            'SELECT photo_path FROM teachers WHERE user_id = $1',
+            [id]
+          );
+
+          const photoPath = photoResult.rows.length > 0 ? photoResult.rows[0].photo_path : null;
+
           // Update classes to remove teacher reference instead of deleting
           await client.query(
             'UPDATE classes SET teacher_id = NULL WHERE teacher_id = $1',
@@ -280,7 +312,31 @@ export class BaseService {
           );
           // Delete teacher
           await client.query('DELETE FROM teachers WHERE user_id = $1', [id]);
+
+          // Delete photo file after database records are deleted
+          if (photoPath) {
+            try {
+              const fs = await import('fs');
+              const path = await import('path');
+              const fullPath = path.join(process.cwd(), photoPath);
+              
+              if (fs.existsSync(fullPath)) {
+                fs.unlinkSync(fullPath);
+                console.log(`✅ Deleted teacher photo: ${photoPath}`);
+              }
+            } catch (err) {
+              console.error(`⚠️ Failed to delete photo file: ${photoPath}`, err);
+            }
+          }
         } else if (userRole === 'staff') {
+          // Get photo path before deleting staff
+          const photoResult = await client.query(
+            'SELECT photo_path FROM staff WHERE user_id = $1',
+            [id]
+          );
+
+          const photoPath = photoResult.rows.length > 0 ? photoResult.rows[0].photo_path : null;
+
           // Update reviewed_by in student_applications
           await client.query(
             'UPDATE student_applications SET reviewed_by = NULL WHERE reviewed_by IN (SELECT id FROM staff WHERE user_id = $1)',
@@ -293,6 +349,22 @@ export class BaseService {
           );
           // Delete staff
           await client.query('DELETE FROM staff WHERE user_id = $1', [id]);
+
+          // Delete photo file after database records are deleted
+          if (photoPath) {
+            try {
+              const fs = await import('fs');
+              const path = await import('path');
+              const fullPath = path.join(process.cwd(), photoPath);
+              
+              if (fs.existsSync(fullPath)) {
+                fs.unlinkSync(fullPath);
+                console.log(`✅ Deleted staff photo: ${photoPath}`);
+              }
+            } catch (err) {
+              console.error(`⚠️ Failed to delete photo file: ${photoPath}`, err);
+            }
+          }
         }
 
         // Delete audit logs for this user
