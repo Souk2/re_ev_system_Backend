@@ -3,6 +3,8 @@ import bcrypt from 'bcrypt'
 import { pool } from '../../config/database'
 import { sendApprovalEmail } from '../../services/EmailService'
 import { authenticate } from '../../middleware/auth'
+import path from 'path'
+import fs from 'fs'
 
 export const createApplicationRoutes = () => {
   const router = Router()
@@ -77,6 +79,39 @@ export const createApplicationRoutes = () => {
 
       const studentId = studentResult.rows[0]?.id
 
+      // Move photo from applications to students directory with student code name
+      let newPhotoPath = app.photo_3x4_path
+      if (app.photo_3x4_path) {
+        const oldFullPath = path.join(process.cwd(), app.photo_3x4_path)
+        
+        if (fs.existsSync(oldFullPath)) {
+          const ext = path.extname(app.photo_3x4_path)
+          const newFilename = `${studentCode}${ext}`
+          const studentDir = path.join(process.cwd(), 'uploads', 'students')
+          const newFullPath = path.join(studentDir, newFilename)
+
+          try {
+            // Ensure students directory exists
+            if (!fs.existsSync(studentDir)) {
+              fs.mkdirSync(studentDir, { recursive: true })
+            }
+
+            // Copy file to new location
+            fs.copyFileSync(oldFullPath, newFullPath)
+            
+            // Delete old file
+            fs.unlinkSync(oldFullPath)
+
+            newPhotoPath = `uploads/students/${newFilename}`
+            console.log(`✅ Moved photo during approval: ${app.photo_3x4_path} -> ${newPhotoPath}`)
+          } catch (err) {
+            console.error(`❌ Failed to move photo: ${app.photo_3x4_path}`, err)
+            // If move fails, keep the original path
+            newPhotoPath = app.photo_3x4_path
+          }
+        }
+      }
+
       await client.query(
         `INSERT INTO student_profiles (
           student_id, first_name_lo, last_name_lo, first_name_en, last_name_en,
@@ -91,7 +126,7 @@ export const createApplicationRoutes = () => {
           app.gender, app.dob, app.ethnicity_id, app.religion_id, app.birth_province_id,
           app.birth_district_id, app.birth_village, app.phone, app.email, app.reg_province_id, app.reg_district_id,
           app.reg_village, app.residence_type_id, app.res_province_id, app.res_district_id,
-          app.res_village, app.photo_3x4_path
+          app.res_village, newPhotoPath
         ]
       )
 
