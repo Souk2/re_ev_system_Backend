@@ -7,6 +7,8 @@ export interface GenerateScheduleParams {
   yearLevel?: number | null;
   dryRun?: boolean;
   sectionsPerCourse?: number;
+  coursesOneSlot?: string[] | null; // Course IDs that should have only 1 slot per week
+  useV7?: boolean; // Use new session-based scheduling
 }
 
 export interface ScheduleSummaryParams {
@@ -91,8 +93,20 @@ class ScheduleService {
     const client = await pool.connect();
 
     try {
-      const query = `
-        SELECT * FROM fn_auto_generate_schedule_v5(
+      // Use V7 for session-based scheduling
+      const functionName = params.useV7 ? 'fn_auto_generate_schedule_v7' : 'fn_auto_generate_schedule_v5';
+      
+      const query = params.useV7 ? `
+        SELECT * FROM ${functionName}(
+          $1::UUID,
+          $2::INTEGER,
+          $3::UUID,
+          $4::INTEGER,
+          $5::BOOLEAN,
+          $6::UUID[]
+        )
+      ` : `
+        SELECT * FROM ${functionName}(
           $1::UUID,
           $2::INTEGER,
           $3::UUID,
@@ -101,7 +115,14 @@ class ScheduleService {
         )
       `;
 
-      const values = [
+      const values = params.useV7 ? [
+        params.academicYearId,
+        params.semester,
+        params.departmentId,
+        params.yearLevel,
+        params.dryRun,
+        params.coursesOneSlot || null
+      ] : [
         params.academicYearId,
         params.semester,
         params.departmentId,
@@ -110,7 +131,7 @@ class ScheduleService {
       ];
 
       const result = await client.query(query, values);
-      
+
       return result.rows;
     } catch (error: any) {
       console.error('Error in generateSchedule:', error);
