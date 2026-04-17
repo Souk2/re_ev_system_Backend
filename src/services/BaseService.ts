@@ -144,6 +144,10 @@ export class BaseService {
         if (['emergency_contacts', 'education_records', 'work_affiliations'].includes(key)) {
           return JSON.stringify(body[key]);
         }
+        // Convert empty strings to null for UNIQUE constraint columns
+        if (['email', 'phone'].includes(key) && body[key] === '') {
+          return null;
+        }
         return body[key];
     });
 
@@ -177,7 +181,17 @@ export class BaseService {
     if (allowedKeys.length === 0) return res.status(400).json({ error: 'No valid fields provided' });
 
     const setClause = allowedKeys.map((key, i) => `${key} = $${i + 1}`).join(', ');
-    const values = allowedKeys.map(key => req.body[key]);
+    const values = allowedKeys.map(key => {
+      // Convert empty strings to null for UNIQUE constraint columns
+      if (['email', 'phone'].includes(key) && req.body[key] === '') {
+        return null;
+      }
+      // Stringify JSONB fields for PostgreSQL
+      if (['emergency_contacts', 'education_records', 'work_affiliations'].includes(key)) {
+        return JSON.stringify(req.body[key]);
+      }
+      return req.body[key];
+    });
 
     try {
       const query = `UPDATE ${tableName} SET ${setClause} WHERE id = $${allowedKeys.length + 1} RETURNING *`;
