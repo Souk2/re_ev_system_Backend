@@ -4,7 +4,11 @@ import {
   getScheduleSummary,
   detectConflicts,
   getScheduleClasses,
-  deleteSchedule
+  deleteSchedule,
+  getSessionTimeSlots,
+  getAvailableTeachersForSlot,
+  createManualClass,
+  deleteClass
 } from '../../controllers/scheduleController';
 import { authenticate, authorize } from '../../middleware/auth';
 
@@ -52,5 +56,11 @@ router.get('/classes', getScheduleClasses);
  * @body    academicYearId, semester
  */
 router.delete('/delete', authorize('admin'), deleteSchedule);
+
+// Manual scheduling routes
+router.get('/time-slots', getSessionTimeSlots);
+router.get('/available-teachers-slot', authorize('admin', 'staff'), getAvailableTeachersForSlot);
+router.post('/manual-class', authorize('admin', 'staff'), createManualClass);
+router.delete('/class/:id', authorize('admin', 'staff'), deleteClass);
 
 export default router;
