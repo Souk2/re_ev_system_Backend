@@ -161,9 +161,9 @@ export const createStudentRoutes = () => {
       const codeResult = await client.query('SELECT fn_generate_student_code() as student_code');
       const studentCode = codeResult.rows[0].student_code;
 
-      // 2. Generate random password
-      const randomPassword = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 6).toUpperCase();
-      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      // 2. Use student code as the initial password
+      const initialPassword = studentCode;
+      const hashedPassword = await bcrypt.hash(initialPassword, 10);
 
       // 3. Create user
       const userResult = await client.query(
@@ -187,7 +187,7 @@ export const createStudentRoutes = () => {
       // Handle photo: if base64, save it; if string path, use it directly
       let finalPhotoPath = profile.photo_path || null;
       if (finalPhotoPath && finalPhotoPath.startsWith('data:')) {
-        finalPhotoPath = saveBase64Photo(finalPhotoPath, studentId);
+        finalPhotoPath = await saveBase64Photo(finalPhotoPath, studentId, client);
       }
 
       await client.query(
@@ -286,7 +286,7 @@ export const createStudentRoutes = () => {
           profile.email,
           `${profile.first_name_lo} ${profile.last_name_lo}`,
           studentCode,
-          randomPassword,
+          initialPassword,
           departmentName,
           createDate
         );
