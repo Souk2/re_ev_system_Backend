@@ -359,6 +359,90 @@ class ScheduleService {
     }
   }
 
+  async getSessionTimeSlots(sessionId: string): Promise<any[]> {
+    const result = await pool.query(
+      `SELECT id, code, name_lo, time_start::TEXT, time_end::TEXT
+       FROM time_slots WHERE session_id = $1::UUID ORDER BY time_start`,
+      [sessionId]
+    );
+    return result.rows;
+  }
+
+  async getAvailableTeachersForSlot(params: {
+    courseId: string;
+    sessionId: string;
+    timeSlotId: string;
+    dayOfWeek: string;
+    yearLevel: number;
+    academicYearId: string;
+    semester: number;
+  }): Promise<any[]> {
+    const { courseId, sessionId, timeSlotId, dayOfWeek, yearLevel, academicYearId, semester } = params;
+    const result = await pool.query(`
+      SELECT DISTINCT t.id,
+        t.first_name || ' ' || t.last_name AS full_name,
+        t.specialization
+      FROM teachers t
+      INNER JOIN teacher_qualifications tq ON t.id = tq.teacher_id AND tq.course_id = $1::UUID
+      INNER JOIN teacher_availability ta ON t.id = ta.teacher_id
+        AND ta.session_id = $2::UUID
+        AND ta.day_of_week = $4
+        AND (ta.year_level = $5::INTEGER OR ta.year_level IS NULL)
+      WHERE t.is_active = true
+        AND NOT EXISTS (
+          SELECT 1 FROM classes c
+          WHERE c.teacher_id = t.id
+            AND c.academic_year_id = $6::UUID
+            AND c.semester = $7::INTEGER
+            AND c.day_of_week = $4
+            AND c.time_slot_id = $3::UUID
+        )
+      ORDER BY full_name
+    `, [courseId, sessionId, timeSlotId, dayOfWeek, yearLevel, academicYearId, semester]);
+    return result.rows;
+  }
+
+  async createManualClass(params: {
+    courseId: string;
+    academicYearId: string;
+    timeSlotId: string;
+    teacherId: string;
+    dayOfWeek: string;
+    yearLevel: number;
+    semester: number;
+    sectionCode: string;
+    room: string;
+  }): Promise<any> {
+    const { courseId, academicYearId, timeSlotId, teacherId, dayOfWeek, yearLevel, semester, sectionCode, room } = params;
+    try {
+      const result = await pool.query(`
+        INSERT INTO classes
+          (course_id, academic_year_id, time_slot_id, teacher_id, day_of_week, year_level, semester, section_code, room, current_enrolled, is_closed)
+        VALUES ($1::UUID, $2::UUID, $3::UUID, $4::UUID, $5, $6::INTEGER, $7::INTEGER, $8, $9, 0, false)
+        RETURNING id
+      `, [courseId, academicYearId, timeSlotId, teacherId, dayOfWeek, yearLevel, semester, sectionCode, room]);
+      return result.rows[0];
+    } catch (error: any) {
+      if (error.code === '23505') throw new Error('ຫ້ອງຮຽນນີ້ມີຢູ່ແລ້ວ (duplicate)');
+      throw new Error(`ສ້າງຫ້ອງຮຽນລົ້ມເຫຼວ: ${error.message}`);
+    }
+  }
+
+  async deleteClass(classId: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM enrollments WHERE class_id = $1::UUID', [classId]);
+      await client.query('DELETE FROM classes WHERE id = $1::UUID', [classId]);
+      await client.query('COMMIT');
+    } catch (error: any) {
+      await client.query('ROLLBACK');
+      throw new Error(`ລົບຫ້ອງຮຽນລົ້ມເຫຼວ: ${error.message}`);
+    } finally {
+      client.release();
+    }
+  }
+
   /**
    * Get available time slots for a teacher
    */

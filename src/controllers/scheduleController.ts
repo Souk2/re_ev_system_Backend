@@ -1,6 +1,63 @@
 import { Request, Response } from 'express';
 import { scheduleService } from '../services/scheduleService';
 
+export const getSessionTimeSlots = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { sessionId } = req.query;
+    if (!sessionId) { res.status(400).json({ success: false, error: 'sessionId required' }); return; }
+    const data = await scheduleService.getSessionTimeSlots(sessionId as string);
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, error: (error as Error).message });
+  }
+};
+
+export const getAvailableTeachersForSlot = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { courseId, sessionId, timeSlotId, dayOfWeek, yearLevel, academicYearId, semester } = req.query;
+    if (!courseId || !sessionId || !timeSlotId || !dayOfWeek || !yearLevel || !academicYearId || !semester) {
+      res.status(400).json({ success: false, error: 'courseId, sessionId, timeSlotId, dayOfWeek, yearLevel, academicYearId, semester required' });
+      return;
+    }
+    const data = await scheduleService.getAvailableTeachersForSlot({
+      courseId: courseId as string,
+      sessionId: sessionId as string,
+      timeSlotId: timeSlotId as string,
+      dayOfWeek: dayOfWeek as string,
+      yearLevel: parseInt(yearLevel as string),
+      academicYearId: academicYearId as string,
+      semester: parseInt(semester as string)
+    });
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, error: (error as Error).message });
+  }
+};
+
+export const createManualClass = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { courseId, academicYearId, timeSlotId, teacherId, dayOfWeek, yearLevel, semester, sectionCode, room } = req.body;
+    if (!courseId || !academicYearId || !timeSlotId || !teacherId || !dayOfWeek || !yearLevel || !semester || !sectionCode || !room) {
+      res.status(400).json({ success: false, error: 'ຂໍ້ມູນບໍ່ຄົບຖ້ວນ' });
+      return;
+    }
+    const data = await scheduleService.createManualClass({ courseId, academicYearId, timeSlotId, teacherId, dayOfWeek, yearLevel: parseInt(yearLevel), semester: parseInt(semester), sectionCode, room });
+    res.json({ success: true, message: 'ສ້າງຫ້ອງຮຽນສຳເລັດ', data });
+  } catch (error) {
+    res.status(500).json({ success: false, error: (error as Error).message });
+  }
+};
+
+export const deleteClass = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    await scheduleService.deleteClass(id);
+    res.json({ success: true, message: 'ລົບຫ້ອງຮຽນສຳເລັດ' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: (error as Error).message });
+  }
+};
+
 /**
  * Generate automatic schedule for classes
  */
